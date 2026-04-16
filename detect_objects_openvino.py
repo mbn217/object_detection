@@ -1,12 +1,17 @@
+import argparse
 import time
 import os
 import numpy as np
 import cv2
 from ultralytics import YOLO
 
-MODEL_NAME = "yolo26s"
-PT_MODEL = f"{MODEL_NAME}.pt"
-OV_MODEL_DIR = f"{MODEL_NAME}_openvino_model/"
+parser = argparse.ArgumentParser(description="YOLO OpenVINO optimized detection")
+parser.add_argument("--model", default="yolo26s.pt", help="Path to PyTorch model file (e.g. yolo26s.pt)")
+args = parser.parse_args()
+
+PT_MODEL = args.model
+MODEL_STEM = os.path.splitext(os.path.basename(PT_MODEL))[0]
+OV_MODEL_DIR = f"{MODEL_STEM}_openvino_model/"
 WARMUP_FRAMES = 30  # frames used for benchmark comparison
 
 

@@ -1,9 +1,14 @@
+import argparse
 import time
 import cv2
 from ultralytics import YOLO
 
-# Load YOLO26s pretrained on COCO (80 object classes, NMS-free end-to-end)
-model = YOLO("yolo26s.pt")
+parser = argparse.ArgumentParser(description="YOLO live object detection")
+parser.add_argument("--model", default="yolo26s.onnx", help="Path to model file (e.g. yolo26s.pt, yolo26s.onnx)")
+args = parser.parse_args()
+
+model = YOLO(args.model)
+print(f"Loaded model: {args.model}")
 
 # Open default camera using DirectShow backend (Windows)
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)

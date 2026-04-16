@@ -19,6 +19,7 @@ Performance gains:
   - Tracking runs concurrently with next detection batch
 """
 
+import argparse
 import time
 import queue
 import threading
@@ -37,8 +38,6 @@ except ImportError:
     print("[WARN] BYTETracker not found – tracking thread will plot detections only.")
 
 # ── Config ────────────────────────────────────────────────────────────────────
-MODEL_NAME    = "yolo26s"
-PT_MODEL      = f"{MODEL_NAME}.pt"
 BATCH_SIZE    = 32      # frames processed per model forward pass
 FRAME_Q_MAX   = 16     # Frame Buffer   – drop oldest if camera outruns detection
 DETECT_Q_MAX  = 8      # Detection Buffer
@@ -185,8 +184,12 @@ def _track_color(track_id: int) -> tuple:
 
 # ── Main / Display ────────────────────────────────────────────────────────────
 def main() -> None:
-    print(f"[INFO] Loading {PT_MODEL} ...")
-    model = YOLO(PT_MODEL)
+    parser = argparse.ArgumentParser(description="YOLO threaded pipeline detection")
+    parser.add_argument("--model", default="yolo26s.pt", help="Path to model file (e.g. yolo26s.pt, yolo26s.onnx)")
+    args = parser.parse_args()
+
+    print(f"[INFO] Loading {args.model} ...")
+    model = YOLO(args.model)
 
     # Open camera
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -214,7 +217,7 @@ def main() -> None:
     print(f"[INFO] Tracker: {'BYTETrack' if _TRACKER_AVAILABLE else 'disabled (fallback to detection only)'}")
 
     count, t0 = 0, time.time()
-    window_title = f"YOLO26s — Threaded Pipeline (batch={BATCH_SIZE})"
+    window_title = f"{args.model} — Threaded Pipeline (batch={BATCH_SIZE})"
 
     while not stop_event.is_set():
         try:

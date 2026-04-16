@@ -43,7 +43,12 @@ pip install -U ultralytics
 ## Running the Detection Script
 
 ```bash
+# default model (yolo26s.onnx)
 python detect_objects.py
+
+# override model
+python detect_objects.py --model yolo26s.pt
+python detect_objects.py --model yolo26s_openvino_model
 ```
 
 - A window will open showing the live camera feed with bounding boxes drawn around detected objects.
@@ -56,6 +61,7 @@ object_detection/
 ├── detect_objects.py           # Basic detection (PyTorch, single-threaded)
 ├── detect_objects_openvino.py  # OpenVINO FP16 optimized detection
 ├── detect_objects_threaded.py  # 3-thread pipeline with batch detection + BYTETracking
+├── convert_model.py            # Smart model converter (auto-detects ONNX vs NCNN)
 ├── requirements.txt            # Python dependencies
 └── README.md                   # This file
 ```
@@ -93,7 +99,11 @@ pip install openvino
 ### Run
 
 ```bash
+# default model (yolo26s.pt)
 python detect_objects_openvino.py
+
+# override model
+python detect_objects_openvino.py --model yolo26s.pt
 ```
 
 On first run, the script will:
@@ -127,12 +137,48 @@ PyTorch and OpenCV release Python's GIL during their C-level operations, so thre
 ### Run
 
 ```bash
+# default model (yolo26s.pt)
 python detect_objects_threaded.py
+
+# override model
+python detect_objects_threaded.py --model yolo26s.onnx
 ```
 
 The live window shows a bottom panel with FPS for each pipeline stage so you can see exactly where the bottleneck is.
 
 Tune `BATCH_SIZE` at the top of the file (default `4`) — larger batches improve GPU/CPU utilisation but add latency.
+
+## Smart Model Converter
+
+[convert_model.py](convert_model.py) converts any `.pt` model to the best deployment format for your system — auto-detected at runtime.
+
+### Auto-detection rules
+
+| System | Chosen format | Reason |
+|---|---|---|
+| Windows x86/x64 | **ONNX** | ONNX Runtime ships on Windows; OpenVINO/TensorRT ready |
+| Linux ARM (Pi, Jetson) | **NCNN** | Mobile/embedded optimised; runs without GPU |
+| Linux x86/x64 | **ONNX** | Universal, ONNX Runtime or OpenVINO downstream |
+| macOS Apple Silicon | **NCNN** | Efficient on ARM; Vulkan GPU supported |
+| macOS Intel | **ONNX** | Cross-platform |
+
+### Usage
+
+```bash
+# Auto-detect best format for your system
+python convert_model.py yolo26s.pt
+
+# Force a specific format
+python convert_model.py yolo26s.pt --format ncnn
+python convert_model.py yolo26s.pt --format onnx
+python convert_model.py yolo26s.pt --format openvino
+
+# Extra options
+python convert_model.py yolo26s.pt --half          # FP16 export
+python convert_model.py yolo26s.pt --format onnx --dynamic --imgsz 640
+```
+
+The script prints a summary of the detected platform, the chosen format with a description, the export settings, and the output path.
 
 ## References
 

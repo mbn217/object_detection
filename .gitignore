@@ -10,8 +10,9 @@ __pycache__/
 # YOLO model weights
 *.pt
 
-# Exported model directories (OpenVINO, TensorRT, ONNX, etc.)
+# Exported model directories (OpenVINO, NCNN, TensorRT, ONNX, etc.)
 *_openvino_model/
+*_ncnn_model/
 *_tensorrt_model/
 *_onnx_model/
 *.onnx
