@@ -53,9 +53,11 @@ python detect_objects.py
 
 ```
 object_detection/
-├── detect_objects.py   # Main detection script
-├── requirements.txt    # Python dependencies
-└── README.md           # This file
+├── detect_objects.py           # Basic detection (PyTorch, single-threaded)
+├── detect_objects_openvino.py  # OpenVINO FP16 optimized detection
+├── detect_objects_threaded.py  # 3-thread pipeline with batch detection + BYTETracking
+├── requirements.txt            # Python dependencies
+└── README.md                   # This file
 ```
 
 ## How It Works
@@ -78,7 +80,62 @@ You can swap `yolo26x.pt` in `detect_objects.py` for a lighter model if needed:
 | yolo26l.pt | Large | 55.0 | Accurate    |
 | yolo26x.pt | XL    | 57.5 | Most accurate |
 
+## OpenVINO Optimized Detection
+
+[detect_objects_openvino.py](detect_objects_openvino.py) exports the model to OpenVINO FP16 format and benchmarks it against the standard PyTorch model before starting live detection.
+
+### Install the OpenVINO dependency
+
+```bash
+pip install openvino
+```
+
+### Run
+
+```bash
+python detect_objects_openvino.py
+```
+
+On first run, the script will:
+1. Export `yolo26s.pt` → `yolo26s_openvino_model/` (FP16, done once)
+2. Run a **30-frame benchmark** on both models and print a speedup summary to the console
+3. Open the live camera window with an **FPS overlay** and the recorded speedup displayed on-screen
+
+Expected speedup on Intel hardware: **up to 3x faster** CPU inference vs PyTorch.
+
+> OpenVINO is optimized for Intel CPUs, integrated GPUs, and NPUs. Results will vary on non-Intel hardware.
+
+## Multithreaded Detection + Tracking Pipeline
+
+[detect_objects_threaded.py](detect_objects_threaded.py) splits the pipeline across three threads connected by shared queues:
+
+```
+[Camera Thread] ──► Frame Buffer ──► [Detection Thread] ──► Detection Buffer ──► [Tracking Thread] ──► Display Buffer ──► [Main]
+```
+
+| Thread | Work | Buffer Out |
+|---|---|---|
+| Camera | `cap.read()` at full camera rate | Frame Buffer |
+| Detection | Batch `BATCH_SIZE` frames → single forward pass | Detection Buffer |
+| Tracking | BYTETrack → assign persistent track IDs + draw | Display Buffer |
+| Main | `cv2.imshow` + per-stage FPS overlay | — |
+
+### Why threads and not processes?
+
+PyTorch and OpenCV release Python's GIL during their C-level operations, so threads achieve real CPU parallelism for the heavy compute. Multiprocessing would add frame-serialization overhead that outweighs any benefit.
+
+### Run
+
+```bash
+python detect_objects_threaded.py
+```
+
+The live window shows a bottom panel with FPS for each pipeline stage so you can see exactly where the bottleneck is.
+
+Tune `BATCH_SIZE` at the top of the file (default `4`) — larger batches improve GPU/CPU utilisation but add latency.
+
 ## References
 
 - [Ultralytics YOLO26 Docs](https://docs.ultralytics.com/models/yolo26/)
+- [Ultralytics OpenVINO Integration](https://docs.ultralytics.com/integrations/openvino/)
 - [Ultralytics GitHub](https://github.com/ultralytics/ultralytics)

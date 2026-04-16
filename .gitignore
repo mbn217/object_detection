@@ -10,6 +10,12 @@ __pycache__/
 # YOLO model weights
 *.pt
 
+# Exported model directories (OpenVINO, TensorRT, ONNX, etc.)
+*_openvino_model/
+*_tensorrt_model/
+*_onnx_model/
+*.onnx
+
 # OS
 .DS_Store
 Thumbs.db
