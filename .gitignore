@@ -1,0 +1,15 @@
+# Virtual environment
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# YOLO model weights
+*.pt
+
+# OS
+.DS_Store
+Thumbs.db
