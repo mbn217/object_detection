@@ -1,3 +1,4 @@
+import time
 import cv2
 from ultralytics import YOLO
 
@@ -19,6 +20,8 @@ if not cap.isOpened():
 
 print("Press 'q' to quit")
 
+prev_time = time.time()
+
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -30,6 +33,13 @@ while True:
 
     # Draw annotated frame
     annotated = results[0].plot()
+
+    # Calculate and overlay FPS
+    curr_time = time.time()
+    fps = 1.0 / (curr_time - prev_time)
+    prev_time = curr_time
+    cv2.putText(annotated, f"FPS: {fps:.1f}", (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
     cv2.imshow("YOLO26s Detection", annotated)
 
